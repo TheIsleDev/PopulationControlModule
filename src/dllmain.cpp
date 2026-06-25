@@ -24,7 +24,7 @@ public:
   }
 
   auto on_unreal_init() -> void override {
-    if (ModConfigReader::LoadModConfig(&LimiterConfig)) return;
+    ModConfigReader::LoadModConfig(&LimiterConfig);
 
     PopulationHandler::Initialize();
   }

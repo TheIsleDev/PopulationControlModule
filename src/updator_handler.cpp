@@ -9,6 +9,7 @@
 #include <Unreal/CoreUObject/UObject/UnrealType.hpp>
 #include <Unreal/Core/Containers/ContainerAllocationPolicies.hpp>
 
+#include "Containers/FString.hpp"
 #include "_structs.hpp"
 #include "Structs/TheIsleStructs.hpp"
 
@@ -39,33 +40,27 @@ namespace PopulationHandler {
       int* Number = DinoNumbers.Find(DinoName);
       if(!Number) {
         DinoNumbers.Add(DinoName, 1);
-      } else Number++;
-    }
-    
-    for (PopulationConfig::SlotConfig Slot : LimiterConfig.DinoClasses) {
-      int Number = *DinoNumbers.Find(FString(to_wstring(Slot.name)));
-      if (Number < TotalPlayersPlaying / Slot.value) continue;
-      //here we loc species and kill new spawns if they over limit
+      } else (*Number)++;
     }
 
-    std::wstring Out = STR("\n  -> CHECKED DATA");
+    int Locked = 0;
+    TSet<FString> ExcludedClasses;
+    for (PopulationConfig::SlotConfig& Slot : LimiterConfig.DinoClasses) {
+      FString DinoClassName = FString(to_wstring(Slot.name));
+      int* NumberPtr = DinoNumbers.Find(DinoClassName);
+      if (NumberPtr && (*NumberPtr < TotalPlayersPlaying / Slot.value)) continue;
+
+      Locked++;
+      ExcludedClasses.Add(DinoClassName);
+    }
 
     TArray<IsleStructs::FTIAvailableClassData>* Classes = GameModeClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
     TArray<IsleStructs::FTIAvailableClassData>* CookedClasses = GameModeCookedClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
-
-    for (IsleStructs::FTIAvailableClassData ClassData : *Classes) {
-      auto DinoName = ClassData.Name.ToString();
-      Out += STR("\nName: ") + DinoName;
+    Classes->Reset(CookedClasses->Num() - Locked);
+    for (IsleStructs::FTIAvailableClassData& ClassData : *CookedClasses) {
+      if (ExcludedClasses.Contains(ClassData.Name.ToFString())) continue;
+      Classes->Add(ClassData);
     }
-
-    std::wstring Out += STR("\n  -> CHECKED DATA NEXT");
-
-    for (IsleStructs::FTIAvailableClassData ClassData : *CookedClasses) {
-      auto DinoName = ClassData.Name.ToString();
-      Out += STR("\nAAAName: ") + DinoName;
-    }
-
-    Output::send(STR("\n{}\n"), Out);
   }
 
   auto Initialize() -> void {
@@ -78,13 +73,3 @@ namespace PopulationHandler {
     DinoGeneralSettings = DinoClass->GetPropertyByNameInChain(STR("GeneralSettings"));
   }
 }
-
-/*
-/mnt/nvme_one/Development/UnrealEngine/TheIsleEvrima/UE4SS/custom_mods/PopulationControl/src/updator_handler.cpp(62): error C2677: binary '+': no global operator found which takes type 'RC::Unreal::FString' (or there is no acceptable conversion)
-/mnt/nvme_one/Development/UnrealEngine/TheIsleEvrima/UE4SS/deps/first/Unreal/include/Unreal/Core/Containers/Array.hpp(162): note: could be 'RC::Unreal::TIndexedContainerIterator<ContainerType,ElementType,SizeType> RC::Unreal::operator +(SizeType,RC::Unreal::TIndexedContainerIterator<ContainerType,ElementType,SizeType>)'
-/mnt/nvme_one/Development/UnrealEngine/TheIsleEvrima/UE4SS/custom_mods/PopulationControl/src/updator_handler.cpp(62): note: 'RC::Unreal::TIndexedContainerIterator<ContainerType,ElementType,SizeType> RC::Unreal::operator +(SizeType,RC::Unreal::TIndexedContainerIterator<ContainerType,ElementType,SizeType>)': could not deduce template argument for 'RC::Unreal::TIndexedContainerIterator<ContainerType,ElementType,SizeType>' from 'RC::Unreal::FString'
-to_string(property->GetName()).c_str()
-
-TArray<FTIAvailableClassData> AvailableClasses
-TArray<FString> BlockedPlayableClasses
-*/
