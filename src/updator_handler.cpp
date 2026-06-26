@@ -88,7 +88,7 @@ namespace PopulationHandler {
 				if (!TargetArray.Num()) continue;
 
 				IsleStructs::ATIDinosaurBase* Dino = TargetArray.Top();
-				uint8 ClutchSize = 0;//*_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);
+				uint8 ClutchSize = *_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);
 				if (ClutchSize >= TargetArray.Num()) continue;
 
 				IsleStructs::FSetHealthParams Params{0};
