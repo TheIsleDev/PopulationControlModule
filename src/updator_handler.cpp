@@ -9,6 +9,7 @@
 #include <Unreal/CoreUObject/UObject/UnrealType.hpp>
 #include <Unreal/Core/Containers/ContainerAllocationPolicies.hpp>
 
+#include "Containers/Array.hpp"
 #include "Containers/FString.hpp"
 #include "CoreUObject/UObject/Class.hpp"
 #include "_structs.hpp"
@@ -18,9 +19,12 @@ using namespace RC::Unreal;
 
 namespace PopulationHandler {
 	static UClass* _GameModeBaseClass = nullptr;
-	static FProperty* _GameModeAllPlayers = nullptr;
+	static FProperty* _GameModeAllControllers = nullptr;
 	static FProperty* _GameModeClasses = nullptr;
 	static FProperty* _GameModeCookedClasses = nullptr;
+
+	static UClass* _PlayerControllerBaseClass = nullptr;
+	static FProperty* _PlayerControllerPawn = nullptr;
 
 	static UClass* _DinoClass = nullptr;
 	static FProperty* _DinoClassGeneralSettings = nullptr;
@@ -41,23 +45,23 @@ namespace PopulationHandler {
 		TArray<IsleStructs::FTIAvailableClassData>* CookedClasses = _GameModeCookedClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
 		for (IsleStructs::FTIAvailableClassData& ClassData : *CookedClasses) {
 			FString DinoClassName = ClassData.Name.ToFString();
-			TArray<IsleStructs::ATIDinosaurBase*> NewArray{};
-			AsocDinoArray.Add(DinoClassName, NewArray);
-			NewArray = {};
-			AsocDinoChildsArray.Add(DinoClassName, NewArray);
+			AsocDinoArray.Add(DinoClassName, TArray<IsleStructs::ATIDinosaurBase*>{});
+			AsocDinoChildsArray.Add(DinoClassName, TArray<IsleStructs::ATIDinosaurBase*>{});
 		}
 
-		TArray<IsleStructs::ATIDinosaurBase*>* ActiveDinos = _GameModeAllPlayers->ContainerPtrToValuePtr<TArray<IsleStructs::ATIDinosaurBase*>>(GameMode);
-		for (IsleStructs::ATIDinosaurBase* Dino : *ActiveDinos) {
+		TArray<IsleStructs::ATIPlayerController*>* ActivePlayers = _GameModeAllControllers->ContainerPtrToValuePtr<TArray<IsleStructs::ATIPlayerController*>>(GameMode);
+		for (IsleStructs::ATIPlayerController* Player : *ActivePlayers) {
 			TotalPlayersPlaying++;
-			if (!Dino || !Dino->IsA(_DinoClass)) continue;
+			IsleStructs::APawn* Pawn = *_PlayerControllerPawn->ContainerPtrToValuePtr<IsleStructs::APawn*>(Player);
+			if (!Pawn || !Pawn->IsA(_DinoClass)) continue;
 
+			IsleStructs::ATIDinosaurBase* Dino = static_cast<IsleStructs::ATIDinosaurBase*>(Pawn);
 			IsleStructs::FGeneralSettings GeneralSettings = *_DinoClassGeneralSettings->ContainerPtrToValuePtr<IsleStructs::FGeneralSettings>(Dino);
 			FString DinoClassName = GeneralSettings.ClassName.ToFString();
 			AsocDinoArray.Find(DinoClassName)->Add(Dino);
 
 			float DinoGrowthPercent = *_DinoClassGrowth->ContainerPtrToValuePtr<float>(Dino);
-			if (DinoGrowthPercent >= 25) continue;
+			if (DinoGrowthPercent >= 0.25) continue;
 			AsocDinoChildsArray.Find(DinoClassName)->Add(Dino);
 		}
 
@@ -84,7 +88,7 @@ namespace PopulationHandler {
 				if (!TargetArray.Num()) continue;
 
 				IsleStructs::ATIDinosaurBase* Dino = TargetArray.Top();
-				uint8 ClutchSize = *_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);
+				uint8 ClutchSize = 0;//*_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);
 				if (ClutchSize >= TargetArray.Num()) continue;
 
 				IsleStructs::FSetHealthParams Params{0};
@@ -97,9 +101,12 @@ namespace PopulationHandler {
 
 	auto Initialize() -> void {
 		_GameModeBaseClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIGameModeBase"));
-		_GameModeAllPlayers = _GameModeBaseClass->GetPropertyByNameInChain(STR("AllPlayerCharacters"));
+		_GameModeAllControllers = _GameModeBaseClass->GetPropertyByNameInChain(STR("AllPlayerControllers"));
 		_GameModeClasses = _GameModeBaseClass->GetPropertyByNameInChain(STR("AvailableClasses"));
 		_GameModeCookedClasses = _GameModeBaseClass->GetPropertyByNameInChain(STR("CookedClasses"));
+
+		_PlayerControllerBaseClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIPlayerController"));
+		_PlayerControllerPawn = _PlayerControllerBaseClass->GetPropertyByNameInChain(STR("Pawn"));
 
 		_DinoClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIDinosaurBase"));
 		_DinoClassGeneralSettings = _DinoClass->GetPropertyByNameInChain(STR("GeneralSettings"));
