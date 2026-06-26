@@ -10,6 +10,7 @@
 #include <Unreal/Core/Containers/ContainerAllocationPolicies.hpp>
 
 #include "Containers/FString.hpp"
+#include "CoreUObject/UObject/Class.hpp"
 #include "_structs.hpp"
 #include "Structs/TheIsleStructs.hpp"
 
@@ -25,7 +26,9 @@ namespace PopulationHandler {
 	static FProperty* _DinoClassGeneralSettings = nullptr;
 	static FProperty* _DinoClassEggClutchSize = nullptr;
 	static FProperty* _DinoClassGrowth = nullptr;
-	static FProperty* _DinoAttributeSet = nullptr;
+	static FProperty* _DinoSteamId = nullptr;
+
+	static UFunction* _SetHealth = nullptr;
 
 	auto Fire(PopulationConfig::PopulationLimiterConfig LimiterConfig) -> void {
 		auto* GameMode = UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C"));
@@ -81,9 +84,11 @@ namespace PopulationHandler {
 				if (!TargetArray.Num()) continue;
 
 				IsleStructs::ATIDinosaurBase* Dino = TargetArray.Top();
-				uint8 ClutchSize = 0;//*_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);
+				uint8 ClutchSize = *_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);
 				if (ClutchSize >= TargetArray.Num()) continue;
 
+				IsleStructs::FSetHealthParams Params{0};
+				Dino->ProcessEvent(_SetHealth, &Params);
 			} else {
 				AvailableClass->Add(ClassData);
 			}
@@ -100,6 +105,8 @@ namespace PopulationHandler {
 		_DinoClassGeneralSettings = _DinoClass->GetPropertyByNameInChain(STR("GeneralSettings"));
 		_DinoClassEggClutchSize = _DinoClass->GetPropertyByNameInChain(STR("EggClutchSize"));
 		_DinoClassGrowth = _DinoClass->GetPropertyByNameInChain(STR("Growth"));
-		_DinoAttributeSet = _DinoClass->GetPropertyByNameInChain(STR("AttributeSet"));
+		_DinoSteamId = _DinoClass->GetPropertyByNameInChain(STR("SteamId"));
+
+		_SetHealth = UObjectGlobals::StaticFindObject<UFunction*>(nullptr, nullptr, STR("/Script/TheIsle.TICharacterBase:SetHealth"));
 	}
 }
