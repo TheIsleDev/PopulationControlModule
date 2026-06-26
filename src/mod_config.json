@@ -1,46 +1,46 @@
 {
-    "DinoClasses": [{
-        "name": "Tyrannosaurus",
-        "value": 60
-    },
-    {
-        "name": "Deinosuchus",
-        "value": 60
-    },
-    {
-        "name": "Allosaurus",
-        "value": 25
-    },
-    {
-        "name": "Carnotaurus",
-        "value": 25
-    },
-    {
-        "name": "Ceratosaurus",
-        "value": 25
-    },
-    {
-        "name": "Dilophosaurus",
-        "value": 25
-    },
-    {
-        "name": "Herrerasaurus",
-        "value": 25
-    },
-    {
-        "name": "Triceratops",
-        "value": 30
-    },
-    {
-        "name": "Stegosaurus",
-        "value": 30
-    },
-    {
-        "name": "Maiasaura",
-        "value": 15
-    },
-    {
-        "name": "Diabloceratops",
-        "value": 15
-    }]
+	"DinoClasses": [{
+		"name": "Tyrannosaurus",
+		"value": 60
+	},
+	{
+		"name": "Deinosuchus",
+		"value": 60
+	},
+	{
+		"name": "Allosaurus",
+		"value": 30
+	},
+	{
+		"name": "Carnotaurus",
+		"value": 20
+	},
+	{
+		"name": "Ceratosaurus",
+		"value": 20
+	},
+	{
+		"name": "Dilophosaurus",
+		"value": 15
+	},
+	{
+		"name": "Herrerasaurus",
+		"value": 30
+	},
+	{
+		"name": "Triceratops",
+		"value": 60
+	},
+	{
+		"name": "Stegosaurus",
+		"value": 45
+	},
+	{
+		"name": "Maiasaura",
+		"value": 30
+	},
+	{
+		"name": "Diabloceratops",
+		"value": 15
+	}]
 }

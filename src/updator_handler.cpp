@@ -16,60 +16,90 @@
 using namespace RC::Unreal;
 
 namespace PopulationHandler {
-  static UClass* GameModeBaseClass = nullptr;
-  static FProperty* GameModeAllPlayers = nullptr;
-  static FProperty* GameModeClasses = nullptr;
-  static FProperty* GameModeCookedClasses = nullptr;
+	static UClass* _GameModeBaseClass = nullptr;
+	static FProperty* _GameModeAllPlayers = nullptr;
+	static FProperty* _GameModeClasses = nullptr;
+	static FProperty* _GameModeCookedClasses = nullptr;
 
-  static UClass* DinoClass = nullptr;
-  static FProperty* DinoGeneralSettings = nullptr;
+	static UClass* _DinoClass = nullptr;
+	static FProperty* _DinoClassGeneralSettings = nullptr;
+	static FProperty* _DinoClassEggClutchSize = nullptr;
+	static FProperty* _DinoClassGrowth = nullptr;
+	static FProperty* _DinoAttributeSet = nullptr;
 
-  auto Fire(PopulationConfig::PopulationLimiterConfig LimiterConfig) -> void {
-    auto* GameMode = UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C"));
-    if (!GameMode) return;
+	auto Fire(PopulationConfig::PopulationLimiterConfig LimiterConfig) -> void {
+		auto* GameMode = UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C"));
+		if (!GameMode) return;
 
-    int TotalPlayersPlaying = 0;
-    TMap<FString, int> DinoNumbers;
-    TArray<IsleStructs::ATIDinosaurBase*>* ActiveDinos = GameModeAllPlayers->ContainerPtrToValuePtr<TArray<IsleStructs::ATIDinosaurBase*>>(GameMode);
-    for (IsleStructs::ATIDinosaurBase* Dino : *ActiveDinos) {
-      if (!Dino || !Dino->IsA(DinoClass)) continue;
+		int TotalPlayersPlaying = 0;
+		TMap<FString, TArray<IsleStructs::ATIDinosaurBase*>> AsocDinoArray;
+		TMap<FString, TArray<IsleStructs::ATIDinosaurBase*>> AsocDinoChildsArray;
 
-      TotalPlayersPlaying++;
-      IsleStructs::FGeneralSettings GeneralSettings = *DinoGeneralSettings->ContainerPtrToValuePtr<IsleStructs::FGeneralSettings>(Dino);
-      FString DinoName = GeneralSettings.ClassName.ToFString();
-      int* Number = DinoNumbers.Find(DinoName);
-      if(!Number) {
-        DinoNumbers.Add(DinoName, 1);
-      } else (*Number)++;
-    }
+		TArray<IsleStructs::FTIAvailableClassData>* CookedClasses = _GameModeCookedClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
+		for (IsleStructs::FTIAvailableClassData& ClassData : *CookedClasses) {
+			FString DinoClassName = ClassData.Name.ToFString();
+			TArray<IsleStructs::ATIDinosaurBase*> NewArray{};
+			AsocDinoArray.Add(DinoClassName, NewArray);
+			NewArray = {};
+			AsocDinoChildsArray.Add(DinoClassName, NewArray);
+		}
 
-    int Locked = 0;
-    TSet<FString> ExcludedClasses;
-    for (PopulationConfig::SlotConfig& Slot : LimiterConfig.DinoClasses) {
-      FString DinoClassName = FString(to_wstring(Slot.name));
-      int* NumberPtr = DinoNumbers.Find(DinoClassName);
-      if (NumberPtr && (*NumberPtr < TotalPlayersPlaying / Slot.value)) continue;
+		TArray<IsleStructs::ATIDinosaurBase*>* ActiveDinos = _GameModeAllPlayers->ContainerPtrToValuePtr<TArray<IsleStructs::ATIDinosaurBase*>>(GameMode);
+		for (IsleStructs::ATIDinosaurBase* Dino : *ActiveDinos) {
+			TotalPlayersPlaying++;
+			if (!Dino || !Dino->IsA(_DinoClass)) continue;
 
-      Locked++;
-      ExcludedClasses.Add(DinoClassName);
-    }
+			IsleStructs::FGeneralSettings GeneralSettings = *_DinoClassGeneralSettings->ContainerPtrToValuePtr<IsleStructs::FGeneralSettings>(Dino);
+			FString DinoClassName = GeneralSettings.ClassName.ToFString();
+			AsocDinoArray.Find(DinoClassName)->Add(Dino);
 
-    TArray<IsleStructs::FTIAvailableClassData>* Classes = GameModeClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
-    TArray<IsleStructs::FTIAvailableClassData>* CookedClasses = GameModeCookedClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
-    Classes->Reset(CookedClasses->Num() - Locked);
-    for (IsleStructs::FTIAvailableClassData& ClassData : *CookedClasses) {
-      if (ExcludedClasses.Contains(ClassData.Name.ToFString())) continue;
-      Classes->Add(ClassData);
-    }
-  }
+			float DinoGrowthPercent = *_DinoClassGrowth->ContainerPtrToValuePtr<float>(Dino);
+			if (DinoGrowthPercent >= 25) continue;
+			AsocDinoChildsArray.Find(DinoClassName)->Add(Dino);
+		}
 
-  auto Initialize() -> void {
-    GameModeBaseClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIGameModeBase"));
-    GameModeAllPlayers = GameModeBaseClass->GetPropertyByNameInChain(STR("AllPlayerCharacters"));
-    GameModeClasses = GameModeBaseClass->GetPropertyByNameInChain(STR("AvailableClasses"));
-    GameModeCookedClasses = GameModeBaseClass->GetPropertyByNameInChain(STR("CookedClasses"));
+		TSet<FString> ExcludedClasses;
+		for (PopulationConfig::SlotConfig& Slot : LimiterConfig.DinoClasses) {
+			FString DinoClassName = FString(to_wstring(Slot.name));
+			TArray<IsleStructs::ATIDinosaurBase*>* TargetArray = AsocDinoArray.Find(DinoClassName);
+			if (!TargetArray) continue;
 
-    DinoClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIDinosaurBase"));
-    DinoGeneralSettings = DinoClass->GetPropertyByNameInChain(STR("GeneralSettings"));
-  }
+			int DinoNumber = TargetArray->Num();
+			if (!DinoNumber) continue;
+			if (DinoNumber < TotalPlayersPlaying / Slot.value) continue;
+
+			ExcludedClasses.Add(DinoClassName);
+		}
+
+		TArray<IsleStructs::FTIAvailableClassData>* AvailableClass = _GameModeClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
+		AvailableClass->Reset(CookedClasses->Num() - ExcludedClasses.Num());
+
+		for (IsleStructs::FTIAvailableClassData& ClassData : *CookedClasses) {
+			FString DinoClassName = ClassData.Name.ToFString();
+			if (ExcludedClasses.Contains(DinoClassName)) {
+				TArray<IsleStructs::ATIDinosaurBase*> TargetArray = *AsocDinoChildsArray.Find(DinoClassName);
+				if (!TargetArray.Num()) continue;
+
+				IsleStructs::ATIDinosaurBase* Dino = TargetArray.Top();
+				uint8 ClutchSize = 0;//*_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);
+				if (ClutchSize >= TargetArray.Num()) continue;
+
+			} else {
+				AvailableClass->Add(ClassData);
+			}
+		}
+	}
+
+	auto Initialize() -> void {
+		_GameModeBaseClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIGameModeBase"));
+		_GameModeAllPlayers = _GameModeBaseClass->GetPropertyByNameInChain(STR("AllPlayerCharacters"));
+		_GameModeClasses = _GameModeBaseClass->GetPropertyByNameInChain(STR("AvailableClasses"));
+		_GameModeCookedClasses = _GameModeBaseClass->GetPropertyByNameInChain(STR("CookedClasses"));
+
+		_DinoClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIDinosaurBase"));
+		_DinoClassGeneralSettings = _DinoClass->GetPropertyByNameInChain(STR("GeneralSettings"));
+		_DinoClassEggClutchSize = _DinoClass->GetPropertyByNameInChain(STR("EggClutchSize"));
+		_DinoClassGrowth = _DinoClass->GetPropertyByNameInChain(STR("Growth"));
+		_DinoAttributeSet = _DinoClass->GetPropertyByNameInChain(STR("AttributeSet"));
+	}
 }

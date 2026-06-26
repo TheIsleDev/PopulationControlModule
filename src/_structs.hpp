@@ -5,12 +5,12 @@
 #include <vector>
 
 namespace PopulationConfig {
-    struct SlotConfig {
-        std::string name;
-        int value;
-    };
+	struct SlotConfig {
+		std::string name;
+		int value;
+	};
 
-    struct PopulationLimiterConfig {
-        std::vector<SlotConfig> DinoClasses;
-    };
+	struct PopulationLimiterConfig {
+		std::vector<SlotConfig> DinoClasses;
+	};
 }
