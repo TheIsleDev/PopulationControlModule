@@ -91,6 +91,14 @@ namespace PopulationHandler {
 				uint8 ClutchSize = *_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);
 				if (ClutchSize >= TargetArray.Num()) continue;
 
+				float HighestGrow = 1;
+				for (IsleStructs::ATIDinosaurBase* CurrentDino : TargetArray) {
+					float DinoGrowthPercent = *_DinoClassGrowth->ContainerPtrToValuePtr<float>(CurrentDino);
+					if (DinoGrowthPercent > HighestGrow) continue;
+					Dino = CurrentDino;
+					HighestGrow = DinoGrowthPercent;
+				}
+
 				IsleStructs::FSetHealthParams Params{0};
 				Dino->ProcessEvent(_SetHealth, &Params);
 			} else {
