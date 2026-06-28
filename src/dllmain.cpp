@@ -1,10 +1,9 @@
-#include <string>
-
 #include <Mod/CppUserModBase.hpp>
+
+#include "Config/config_reader.hpp"
 
 #include "_structs.hpp"
 #include "updator_handler.cpp"
-#include "Config/config_reader.hpp"
 
 class PopulationControl : public RC::CppUserModBase {
 private:
