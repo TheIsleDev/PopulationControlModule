@@ -1,5 +1,3 @@
-#pragma once
-
 #include <Unreal/AActor.hpp>
 #include <Unreal/UObject.hpp>
 #include <Unreal/UObjectGlobals.hpp>
@@ -13,7 +11,7 @@
 
 #include "_structs.hpp"
 
-namespace PopulationHandler {
+namespace PopulationControlModule {
 	using namespace RC::Unreal;
 
 	static UClass* _GameModeBaseClass = nullptr;
@@ -36,7 +34,7 @@ namespace PopulationHandler {
 		auto* GameMode = UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C"));// Idk we can probably cache it? It never supposed to be GC'ed
 		if (!GameMode) return;
 
-		int TotalPlayersPlaying = 0;
+		int TotalPlayersPlaying = 0;// No, I know I can use Num, but this mod count lobby sitters too and ooman players
 		TMap<FString, TArray<IsleStructs::ATIDinosaurBase*>> AsocDinoArray;
 		TMap<FString, TArray<IsleStructs::ATIDinosaurBase*>> AsocDinoChildsArray;
 
@@ -71,7 +69,7 @@ namespace PopulationHandler {
 
 			int DinoNumber = TargetArray->Num();
 			if (!DinoNumber) continue;
-			if (DinoNumber < TotalPlayersPlaying / Slot.value) continue;
+			if (TotalPlayersPlaying / Slot.value > DinoNumber) continue;
 
 			ExcludedClasses.Add(DinoClassName);
 		}

@@ -3,7 +3,7 @@
 #include "Config/config_reader.hpp"
 
 #include "_structs.hpp"
-#include "updator_handler.cpp"
+#include "handler.cpp"
 
 class PopulationControl : public RC::CppUserModBase {
 private:
@@ -14,8 +14,7 @@ private:
 	PopulationConfig::PopulationLimiterConfig LimiterConfig;
 
 public:
-	PopulationControl() : CppUserModBase()
-	{
+	PopulationControl() : CppUserModBase() {
 		ModName = STR("PopulationControl");
 		ModVersion = STR("1.0");
 		ModDescription = STR("Hehe");
@@ -25,26 +24,23 @@ public:
 	auto on_unreal_init() -> void override {
 		ModConfigReader::LoadModConfig(&LimiterConfig);
 
-		PopulationHandler::Initialize();
+		PopulationControlModule::Initialize();
 	}
 
 	auto on_update() -> void override {
 		if (++current_tick < last_tick_attempt + tick_delay) return;
 		last_tick_attempt = current_tick;
-		PopulationHandler::Fire(LimiterConfig);
+		PopulationControlModule::Fire(LimiterConfig);
 	}
 };
 
 #define KISMET_DEBUGGER_MOD_API __declspec(dllexport)
-extern "C"
-{
-	KISMET_DEBUGGER_MOD_API RC::CppUserModBase* start_mod()
-	{
+extern "C" {
+	KISMET_DEBUGGER_MOD_API RC::CppUserModBase* start_mod() {
 		return new PopulationControl();
 	}
 
-	KISMET_DEBUGGER_MOD_API void uninstall_mod(RC::CppUserModBase* mod)
-	{
+	KISMET_DEBUGGER_MOD_API void uninstall_mod(RC::CppUserModBase* mod) {
 		delete mod;
 	}
 }
