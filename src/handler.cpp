@@ -11,30 +11,34 @@
 
 #include "_structs.hpp"
 
-namespace PopulationControlModule {
+namespace PopulationControlComponent {
 	using namespace RC::Unreal;
 
-	static UClass* _GameModeBaseClass = nullptr;
-	static FProperty* _GameModeAllControllers = nullptr;
-	static FProperty* _GameModeClasses = nullptr;
-	static FProperty* _GameModeCookedClasses = nullptr;
+	static UClass* _GameModeBaseClass{};
+	static FProperty* _GameModeAllControllers{};
+	static FProperty* _GameModeClasses{};
+	static FProperty* _GameModeCookedClasses{};
 
-	static UClass* _PlayerControllerBaseClass = nullptr;
-	static FProperty* _PlayerControllerPawn = nullptr;
+	static UClass* _PlayerControllerBaseClass{};
+	static FProperty* _PlayerControllerPawn{};
 
-	static UClass* _DinoClass = nullptr;
-	static FProperty* _DinoClassGeneralSettings = nullptr;
-	static FProperty* _DinoClassEggClutchSize = nullptr;
-	static FProperty* _DinoClassGrowth = nullptr;
-	static FProperty* _DinoSteamId = nullptr;
+	static UClass* _DinoClass{};
+	static FProperty* _DinoClassGeneralSettings{};
+	static FProperty* _DinoClassEggClutchSize{};
+	static FProperty* _DinoClassGrowth{};
+	static FProperty* _DinoSteamId{};
 
-	static UFunction* _SetHealth = nullptr;
+	static UFunction* _SetHealth{};
+
+	static UObject* GameMode{};
 
 	auto Fire(PopulationConfig::PopulationLimiterConfig LimiterConfig) -> void {
-		auto* GameMode = UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C"));// Idk we can probably cache it? It never supposed to be GC'ed
-		if (!GameMode) return;
+		if (!GameMode) {
+			GameMode = UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C"));
+			if (!GameMode) return;
+		};
 
-		int TotalPlayersPlaying = 0;// No, I know I can use Num, but this mod count lobby sitters too and ooman players
+		int TotalPlayersPlaying{0};// No, I know I can use Num, but this mod count lobby sitters too and ooman players
 		TMap<FString, TArray<IsleStructs::ATIDinosaurBase*>> AsocDinoArray;
 		TMap<FString, TArray<IsleStructs::ATIDinosaurBase*>> AsocDinoChildsArray;
 
@@ -79,27 +83,28 @@ namespace PopulationControlModule {
 
 		for (IsleStructs::FTIAvailableClassData& ClassData : *CookedClasses) {
 			FString DinoClassName = ClassData.Name.ToFString();
-			if (ExcludedClasses.Contains(DinoClassName)) {
-				TArray<IsleStructs::ATIDinosaurBase*> TargetArray = *AsocDinoChildsArray.Find(DinoClassName);// Here we for sure know this array exist, so no safe checks
-				if (!TargetArray.Num()) continue;
-
-				IsleStructs::ATIDinosaurBase* Dino = TargetArray.Top();
-				uint8 ClutchSize = *_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);// This way ppl can nest over limit
-				if (ClutchSize >= TargetArray.Num()) continue;
-
-				float HighestGrow = 1;
-				for (IsleStructs::ATIDinosaurBase* CurrentDino : TargetArray) {// Find the smallest one, so we wont be doing circle around killing the biggest one after somebody joins in
-					float DinoGrowthPercent = *_DinoClassGrowth->ContainerPtrToValuePtr<float>(CurrentDino);
-					if (DinoGrowthPercent > HighestGrow) continue;
-					Dino = CurrentDino;
-					HighestGrow = DinoGrowthPercent;
-				}
-
-				IsleStructs::FSetHealthParams Params{0};
-				Dino->ProcessEvent(_SetHealth, &Params);
-			} else {
+			if (!ExcludedClasses.Contains(DinoClassName)) {
 				AvailableClass->Add(ClassData);
+				continue;
 			}
+
+			TArray<IsleStructs::ATIDinosaurBase*> TargetArray = *AsocDinoChildsArray.Find(DinoClassName);// Here we for sure know this array exist, so no safe checks
+			if (!TargetArray.Num()) continue;
+
+			IsleStructs::ATIDinosaurBase* Dino = TargetArray.Top();
+			uint8 ClutchSize = *_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);// This way ppl can nest over limit
+			if (ClutchSize >= TargetArray.Num()) continue;
+
+			float HighestGrow = 1;
+			for (IsleStructs::ATIDinosaurBase* CurrentDino : TargetArray) {// Find the smallest one, so we wont be doing circle around killing the biggest one after somebody joins in
+				float DinoGrowthPercent = *_DinoClassGrowth->ContainerPtrToValuePtr<float>(CurrentDino);
+				if (DinoGrowthPercent > HighestGrow) continue;
+				Dino = CurrentDino;
+				HighestGrow = DinoGrowthPercent;
+			}
+
+			IsleStructs::FSetHealthParams SetHealthParams{0};
+			Dino->ProcessEvent(_SetHealth, &SetHealthParams);
 		}
 	}
 

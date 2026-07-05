@@ -7,11 +7,10 @@
 
 class PopulationControl : public RC::CppUserModBase {
 private:
-	int last_tick_attempt = 0;
-	int current_tick = 0;
-	const int tick_delay = 1800;
-
 	PopulationConfig::PopulationLimiterConfig LimiterConfig;
+
+	int TicksFired{0};
+	static constexpr int PerTicksFired{1200};// 120 pre sec, 30 game ticks
 
 public:
 	PopulationControl() : CppUserModBase() {
@@ -24,13 +23,14 @@ public:
 	auto on_unreal_init() -> void override {
 		ModConfigReader::LoadModConfig(&LimiterConfig);
 
-		PopulationControlModule::Initialize();
+		PopulationControlComponent::Initialize();
 	}
 
 	auto on_update() -> void override {
-		if (++current_tick < last_tick_attempt + tick_delay) return;
-		last_tick_attempt = current_tick;
-		PopulationControlModule::Fire(LimiterConfig);
+		if (++TicksFired < PerTicksFired) return;
+		TicksFired = 0;
+
+		PopulationControlComponent::Fire(LimiterConfig);
 	}
 };
 
