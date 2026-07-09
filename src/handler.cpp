@@ -7,8 +7,6 @@
 #include "Containers/FString.hpp"
 #include "CoreUObject/UObject/Class.hpp"
 
-#include "Structs/TheIsleStructs.hpp"
-
 #include <Reflection/_include_custom.hpp>
 
 #include "_structs.hpp"
@@ -16,25 +14,12 @@
 namespace PopulationControlComponent {
 	using namespace RC::Unreal;
 
-	static UClass* _GameModeBaseClass{};
-	static FProperty* _GameModeAllControllers{};
-	static FProperty* _GameModeClasses{};
-	static FProperty* _GameModeCookedClasses{};
-
-	static UClass* _PlayerControllerBaseClass{};
-	static FProperty* _PlayerControllerPawn{};
-
 	static UClass* _DinoClass{};
-	static FProperty* _DinoClassGeneralSettings{};
-	static FProperty* _DinoClassEggClutchSize{};
-	static FProperty* _DinoClassGrowth{};
-	static FProperty* _DinoSteamId{};
-
-	static UObject* GameMode{};
+	static ATIGameModeBase* GameMode{};
 
 	auto Fire(PopulationConfig::PopulationLimiterConfig LimiterConfig) -> void {
 		if (!GameMode) {
-			GameMode = UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C"));
+			GameMode = static_cast<ATIGameModeBase*>(UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C")));
 			if (!GameMode) return;
 		};
 
@@ -42,25 +27,25 @@ namespace PopulationControlComponent {
 		TMap<FString, TArray<ATIDinosaurBase*>> AsocDinoArray;
 		TMap<FString, TArray<ATIDinosaurBase*>> AsocDinoChildsArray;
 
-		TArray<IsleStructs::FTIAvailableClassData>* CookedClasses = _GameModeCookedClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
-		for (IsleStructs::FTIAvailableClassData& ClassData : *CookedClasses) {
+		TArray<FTIAvailableClassData> CookedClasses = GameMode->GetCookedClasses();
+		for (FTIAvailableClassData& ClassData : CookedClasses) {
 			FString DinoClassName = ClassData.Name.ToFString();
 			AsocDinoArray.Add(DinoClassName, TArray<ATIDinosaurBase*>{});
 			AsocDinoChildsArray.Add(DinoClassName, TArray<ATIDinosaurBase*>{});
 		}
 
-		TArray<IsleStructs::ATIPlayerController*>* ActivePlayers = _GameModeAllControllers->ContainerPtrToValuePtr<TArray<IsleStructs::ATIPlayerController*>>(GameMode);
-		for (IsleStructs::ATIPlayerController* Player : *ActivePlayers) {
+		TSet<ATIPlayerController*> ActivePlayers = GameMode->GetAllPlayerControllers();
+		for (ATIPlayerController* Player : ActivePlayers) {
 			TotalPlayersPlaying++;
-			APawn* Pawn = *_PlayerControllerPawn->ContainerPtrToValuePtr<APawn*>(Player);
+			APawn* Pawn = Player->GetPawn();
 			if (!Pawn || !Pawn->IsA(_DinoClass)) continue;// Make sure it's actually dino, not a fucking damn human
 
 			ATIDinosaurBase* Dino = static_cast<ATIDinosaurBase*>(Pawn);
-			IsleStructs::FGeneralSettings GeneralSettings = *_DinoClassGeneralSettings->ContainerPtrToValuePtr<IsleStructs::FGeneralSettings>(Dino);
-			FString DinoClassName = GeneralSettings.ClassName.ToFString();
+			FGeneralSettings GeneralSettings = Dino->GetGeneralSettings();
+			FString DinoClassName = GeneralSettings.GetClassName().ToFString();
 			AsocDinoArray.Find(DinoClassName)->Add(Dino);// Not safe, may result in crash, there are edge case can be with dinoses that arent listed in CookedClasses in future
 
-			float DinoGrowthPercent = *_DinoClassGrowth->ContainerPtrToValuePtr<float>(Dino);
+			float DinoGrowthPercent = Dino->GetGrowth();
 			if (DinoGrowthPercent >= 0.25) continue;
 			AsocDinoChildsArray.Find(DinoClassName)->Add(Dino);
 		}
@@ -78,13 +63,13 @@ namespace PopulationControlComponent {
 			ExcludedClasses.Add(DinoClassName);
 		}
 
-		TArray<IsleStructs::FTIAvailableClassData>* AvailableClass = _GameModeClasses->ContainerPtrToValuePtr<TArray<IsleStructs::FTIAvailableClassData>>(GameMode);
-		AvailableClass->Reset(CookedClasses->Num() - ExcludedClasses.Num());// Just in case
+		TArray<FTIAvailableClassData> AvailableClass = GameMode->GetAvailableClasses();
+		AvailableClass.Reset(CookedClasses.Num() - ExcludedClasses.Num());// Just in case
 
-		for (IsleStructs::FTIAvailableClassData& ClassData : *CookedClasses) {
+		for (FTIAvailableClassData& ClassData : CookedClasses) {
 			FString DinoClassName = ClassData.Name.ToFString();
 			if (!ExcludedClasses.Contains(DinoClassName)) {
-				AvailableClass->Add(ClassData);
+				AvailableClass.Add(ClassData);
 				continue;
 			}
 
@@ -92,12 +77,12 @@ namespace PopulationControlComponent {
 			if (!TargetArray.Num()) continue;
 
 			ATIDinosaurBase* Dino = TargetArray.Top();
-			uint8 ClutchSize = *_DinoClassEggClutchSize->ContainerPtrToValuePtr<uint8>(Dino);// This way ppl can nest over limit
+			uint8 ClutchSize = Dino->GetEggClutchSize();// This way ppl can nest over limit
 			if (ClutchSize >= TargetArray.Num()) continue;
 
 			float HighestGrow = 1;
 			for (ATIDinosaurBase* CurrentDino : TargetArray) {// Find the smallest one, so we wont be doing circle around killing the biggest one after somebody joins in
-				float DinoGrowthPercent = *_DinoClassGrowth->ContainerPtrToValuePtr<float>(CurrentDino);
+				float DinoGrowthPercent = CurrentDino->GetGrowth();
 				if (DinoGrowthPercent > HighestGrow) continue;
 				Dino = CurrentDino;
 				HighestGrow = DinoGrowthPercent;
@@ -108,18 +93,6 @@ namespace PopulationControlComponent {
 	}
 
 	auto Initialize() -> void {
-		_GameModeBaseClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIGameModeBase"));
-		_GameModeAllControllers = _GameModeBaseClass->GetPropertyByNameInChain(STR("AllPlayerControllers"));// We go this way, because this way for sure we only detect active dinos, other variant provide dead too
-		_GameModeClasses = _GameModeBaseClass->GetPropertyByNameInChain(STR("AvailableClasses"));// I have no idea what the fuck is going on here on game side, I tried to do how it supposed to be, but nuh uh
-		_GameModeCookedClasses = _GameModeBaseClass->GetPropertyByNameInChain(STR("CookedClasses"));// They are not the same ref to objects, in upper array another set of same type of object, however nothing bad happens if I use them
-
-		_PlayerControllerBaseClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIPlayerController"));
-		_PlayerControllerPawn = _PlayerControllerBaseClass->GetPropertyByNameInChain(STR("Pawn"));// Dinos/Humans/Spectator
-
 		_DinoClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIDinosaurBase"));
-		_DinoClassGeneralSettings = _DinoClass->GetPropertyByNameInChain(STR("GeneralSettings"));
-		_DinoClassEggClutchSize = _DinoClass->GetPropertyByNameInChain(STR("EggClutchSize"));
-		_DinoClassGrowth = _DinoClass->GetPropertyByNameInChain(STR("Growth"));
-		_DinoSteamId = _DinoClass->GetPropertyByNameInChain(STR("SteamId"));
 	}
 }

@@ -10,7 +10,7 @@ private:
 	PopulationConfig::PopulationLimiterConfig LimiterConfig;
 
 	int TicksFired{0};
-	static constexpr int PerTicksFired{1200};// 120 pre sec, 30 game ticks
+	static constexpr int PerTicksFired{1440};// 120 per sec, 30 game ticks
 
 public:
 	PopulationControl() : CppUserModBase() {
@@ -34,13 +34,13 @@ public:
 	}
 };
 
-#define KISMET_DEBUGGER_MOD_API __declspec(dllexport)
+#define MOD_API __declspec(dllexport)
 extern "C" {
-	KISMET_DEBUGGER_MOD_API RC::CppUserModBase* start_mod() {
+	MOD_API RC::CppUserModBase* start_mod() {
 		return new PopulationControl();
 	}
 
-	KISMET_DEBUGGER_MOD_API void uninstall_mod(RC::CppUserModBase* mod) {
+	MOD_API void uninstall_mod(RC::CppUserModBase* mod) {
 		delete mod;
 	}
 }
