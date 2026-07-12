@@ -1,6 +1,6 @@
 #include <Mod/CppUserModBase.hpp>
 
-#include "Config/config_reader.hpp"
+#include <Config/config_reader.hpp>
 
 #include "_structs.hpp"
 #include "handler.cpp"
@@ -23,14 +23,14 @@ public:
 	auto on_unreal_init() -> void override {
 		ModConfigReader::LoadModConfig(&LimiterConfig);
 
-		PopulationControlComponent::Initialize();
+		PopulationControlComponent::Initialize(LimiterConfig);
 	}
 
 	auto on_update() -> void override {
 		if (++TicksFired < PerTicksFired) return;
 		TicksFired = 0;
 
-		PopulationControlComponent::Fire(LimiterConfig);
+		PopulationControlComponent::Fire();
 	}
 };
 

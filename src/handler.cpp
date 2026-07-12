@@ -3,9 +3,9 @@
 #include <Unreal/UObjectGlobals.hpp>
 #include <Unreal/CoreUObject/UObject/UnrealType.hpp>
 #include <Unreal/Core/Containers/ContainerAllocationPolicies.hpp>
-#include "Containers/Array.hpp"
-#include "Containers/FString.hpp"
-#include "CoreUObject/UObject/Class.hpp"
+#include <Containers/Array.hpp>
+#include <Containers/FString.hpp>
+#include <CoreUObject/UObject/Class.hpp>
 
 #include <Reflection/_include_custom.hpp>
 
@@ -14,10 +14,12 @@
 namespace PopulationControlComponent {
 	using namespace RC::Unreal;
 
+	static PopulationConfig::PopulationLimiterConfig LoadedConfig;
+
 	static UClass* _DinoClass{};
 	static ATIGameModeBase* GameMode{};
 
-	auto Fire(PopulationConfig::PopulationLimiterConfig LimiterConfig) -> void {
+	auto Fire() -> void {
 		if (!GameMode) {
 			GameMode = static_cast<ATIGameModeBase*>(UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C")));
 			if (!GameMode) return;
@@ -51,8 +53,8 @@ namespace PopulationControlComponent {
 		}
 
 		TSet<FString> ExcludedClasses;
-		for (PopulationConfig::SlotConfig& Slot : LimiterConfig.DinoClasses) {
-			FString DinoClassName = FString(to_wstring(Slot.name));
+		for (PopulationConfig::SlotConfig& Slot : LoadedConfig.DinoClasses) {
+			FString DinoClassName = FString(RC::to_wstring(Slot.name));
 			TArray<ATIDinosaurBase*>* TargetArray = AsocDinoArray.Find(DinoClassName);
 			if (!TargetArray) continue;// Safe check, just in case somebody mess up with config, if you set up it right there no chance for it to fail
 
@@ -92,7 +94,8 @@ namespace PopulationControlComponent {
 		}
 	}
 
-	auto Initialize() -> void {
+	auto Initialize(PopulationConfig::PopulationLimiterConfig Config) -> void {
+		LoadedConfig = Config;
 		_DinoClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIDinosaurBase"));
 	}
 }
