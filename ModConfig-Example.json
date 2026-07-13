@@ -1,0 +1,57 @@
+{
+	"DinoClasses": [{
+		"name": "Tyrannosaurus",
+		"value": 60,
+		"clutch_value": 120
+	},
+	{
+		"name": "Deinosuchus",
+		"value": 60,
+		"clutch_value": 120
+	},
+	{
+		"name": "Allosaurus",
+		"value": 30,
+		"clutch_value": 60
+	},
+	{
+		"name": "Carnotaurus",
+		"value": 20,
+		"clutch_value": 40
+	},
+	{
+		"name": "Ceratosaurus",
+		"value": 20,
+		"clutch_value": 40
+	},
+	{
+		"name": "Dilophosaurus",
+		"value": 15,
+		"clutch_value": 30
+	},
+	{
+		"name": "Herrerasaurus",
+		"value": 30,
+		"clutch_value": 60
+	},
+	{
+		"name": "Triceratops",
+		"value": 60,
+		"clutch_value": 120
+	},
+	{
+		"name": "Stegosaurus",
+		"value": 45,
+		"clutch_value": 90
+	},
+	{
+		"name": "Maiasaura",
+		"value": 30,
+		"clutch_value": 60
+	},
+	{
+		"name": "Diabloceratops",
+		"value": 15,
+		"clutch_value": 30
+	}]
+}

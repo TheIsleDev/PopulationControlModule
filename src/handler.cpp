@@ -53,6 +53,7 @@ namespace PopulationControlComponent {
 		}
 
 		TSet<FString> ExcludedClasses;
+		TMap<FString, int> ClassesClutchLimits;
 		for (PopulationConfig::SlotConfig& Slot : LoadedConfig.DinoClasses) {
 			FString DinoClassName = FString(RC::to_wstring(Slot.name));
 			TArray<ATIDinosaurBase*>* TargetArray = AsocDinoArray.Find(DinoClassName);
@@ -63,6 +64,7 @@ namespace PopulationControlComponent {
 			if (TotalPlayersPlaying / Slot.value > DinoNumber) continue;
 
 			ExcludedClasses.Add(DinoClassName);
+			ClassesClutchLimits.Add(DinoClassName, Slot.clutch_value);
 		}
 
 		TArray<FTIAvailableClassData> AvailableClass = GameMode->GetAvailableClasses();
@@ -79,8 +81,12 @@ namespace PopulationControlComponent {
 			if (!TargetArray.Num()) continue;
 
 			ATIDinosaurBase* Dino = TargetArray.Top();
-			uint8 ClutchSize = Dino->GetEggClutchSize();// This way ppl can nest over limit
-			if (ClutchSize >= TargetArray.Num()) continue;
+			int ClutchLimits = *ClassesClutchLimits.Find(DinoClassName);
+			uint8 ClutchSize{};
+			if (ClutchLimits && TotalPlayersPlaying > ClutchLimits) ClutchSize = static_cast<uint8>(TotalPlayersPlaying / ClutchLimits);
+			else ClutchSize = Dino->GetEggClutchSize();
+
+			if (ClutchSize >= TargetArray.Num()) continue;// This way ppl can nest over limit
 
 			float HighestGrow = 1;
 			for (ATIDinosaurBase* CurrentDino : TargetArray) {// Find the smallest one, so we wont be doing circle around killing the biggest one after somebody joins in

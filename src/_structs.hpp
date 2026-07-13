@@ -7,7 +7,8 @@
 namespace PopulationConfig {
 	struct SlotConfig {
 		std::string name;
-		int value;
+		int value{0};// How much players required per one slot
+		int clutch_value{0};// How much players required per one clutch slot
 	};
 
 	struct PopulationLimiterConfig {

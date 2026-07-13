@@ -15,7 +15,7 @@ private:
 public:
 	PopulationControl() : CppUserModBase() {
 		ModName = STR("PopulationControl");
-		ModVersion = STR("1.0");
+		ModVersion = STR("1.0.1");
 		ModDescription = STR("Hehe");
 		ModAuthors = STR("Shiza");
 	}
