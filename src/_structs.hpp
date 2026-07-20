@@ -13,5 +13,6 @@ namespace PopulationConfig {
 
 	struct PopulationLimiterConfig {
 		std::vector<SlotConfig> DinoClasses;
+		float spawn_growth{0.25f};
 	};
 }

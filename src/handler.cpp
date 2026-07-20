@@ -16,7 +16,6 @@ namespace PopulationControlComponent {
 
 	static PopulationConfig::PopulationLimiterConfig LoadedConfig;
 
-	static UClass* _DinoClass{};
 	static ATIGameModeBase* GameMode{};
 
 	auto Fire() -> void {
@@ -40,7 +39,7 @@ namespace PopulationControlComponent {
 		for (ATIPlayerController* Player : ActivePlayers) {
 			TotalPlayersPlaying++;
 			APawn* Pawn = Player->GetPawn();
-			if (!Pawn || !Pawn->IsA(_DinoClass)) continue;// Make sure it's actually dino, not a fucking damn human
+			if (!Pawn || !Pawn->IsA(ATIDinosaurBase::StaticClass())) continue;// Make sure it's actually dino, not a fucking damn human
 
 			ATIDinosaurBase* Dino = static_cast<ATIDinosaurBase*>(Pawn);
 			FGeneralSettings GeneralSettings = Dino->GetGeneralSettings();
@@ -48,7 +47,7 @@ namespace PopulationControlComponent {
 			AsocDinoArray.Find(DinoClassName)->Add(Dino);// Not safe, may result in crash, there are edge case can be with dinoses that arent listed in CookedClasses in future
 
 			float DinoGrowthPercent = Dino->GetGrowth();
-			if (DinoGrowthPercent >= 0.25) continue;
+			if (DinoGrowthPercent >= LoadedConfig.spawn_growth) continue;
 			AsocDinoChildsArray.Find(DinoClassName)->Add(Dino);
 		}
 
@@ -91,7 +90,8 @@ namespace PopulationControlComponent {
 			float HighestGrow = 1;
 			for (ATIDinosaurBase* CurrentDino : TargetArray) {// Find the smallest one, so we wont be doing circle around killing the biggest one after somebody joins in
 				float DinoGrowthPercent = CurrentDino->GetGrowth();
-				if (DinoGrowthPercent > HighestGrow) continue;
+				// Make sure we are not going to slay entombed dudes in any case
+				if (DinoGrowthPercent > HighestGrow || CurrentDino->GetElderReplicationStacks()) continue;
 				Dino = CurrentDino;
 				HighestGrow = DinoGrowthPercent;
 			}
@@ -102,6 +102,5 @@ namespace PopulationControlComponent {
 
 	auto Initialize(PopulationConfig::PopulationLimiterConfig Config) -> void {
 		LoadedConfig = Config;
-		_DinoClass = UObjectGlobals::StaticFindObject<UClass*>(nullptr, nullptr, STR("/Script/TheIsle.TIDinosaurBase"));
 	}
 }
