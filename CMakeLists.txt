@@ -2,8 +2,9 @@ set(TARGET PopulationControl)
 project(${TARGET})
 
 add_library(${TARGET} SHARED
-    src/dllmain.cpp
+    src/PopulationControl.cpp
+    src/Subsystem.cpp
 )
 
-target_link_libraries(${TARGET} PUBLIC EvrimaCommon)
+target_include_directories(${TARGET} PRIVATE "include")
 target_link_libraries(${TARGET} PUBLIC UE4SS)
