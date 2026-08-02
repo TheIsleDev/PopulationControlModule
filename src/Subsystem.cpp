@@ -24,7 +24,7 @@ PopulationControlSubsystem::PopulationControlSubsystem(PopulationControlConfig* 
 		[this](Hook::TCallbackIterationData<void>& info, UEngine* Context, float DeltaSeconds, bool bIdleMode) {
 			Tick(DeltaSeconds, bIdleMode);
 		}
-		, {false, true, STR("PopulationControlSystem"), STR("TickingControl")}
+		, {false, true, STR("PopulationControl"), STR("TickingControl")}
 	);
 }
 
@@ -36,6 +36,9 @@ PopulationControlSubsystem::~PopulationControlSubsystem() {
 void PopulationControlSubsystem::Tick(float DeltaSeconds, bool bIdleMode) {
 	// Нахуя тикать если ничего не изменилось?
 	if (bIdleMode) return;
+
+	if (++TicksFired < TickRate) return;
+	TicksFired = 0;
 
 	static ATIGameModeBase* GameMode = static_cast<ATIGameModeBase*>(UObjectGlobals::FindFirstOf(STR("BP_SurvivalGameMode_C")));
 

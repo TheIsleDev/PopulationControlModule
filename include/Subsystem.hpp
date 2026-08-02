@@ -23,7 +23,7 @@ class PopulationControlSubsystem {
 private:
 	/// How often it fires
 	int TicksFired = 0;
-	static constexpr int TickRate{10};
+	static constexpr int TickRate{30};
 
 	PopulationControlConfig* Config{};
 	Hook::GlobalCallbackId FireCallBackID{};
