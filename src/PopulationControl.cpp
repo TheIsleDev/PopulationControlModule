@@ -16,6 +16,7 @@ PopulationControlSystem::PopulationControlSystem() {
 }
 
 PopulationControlSystem::~PopulationControlSystem() {
+	delete TickingPopulationControl;
 }
 
 
