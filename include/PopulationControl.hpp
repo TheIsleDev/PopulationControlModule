@@ -8,10 +8,10 @@
 
 class PopulationControlSystem : public RC::CppUserModBase {
 private:
-	PopulationControlConfig Config{};
+	PopulationControlConfig Config;
 
 public:
-	std::unique_ptr<PopulationControlSubsystem> TickingPopulationControl{};
+	std::unique_ptr<PopulationControlSubsystem> TickingPopulationControl;
 
     PopulationControlSystem();
 	~PopulationControlSystem() override;

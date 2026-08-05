@@ -25,8 +25,8 @@ private:
 	int TicksFired = 0;
 	static constexpr int TickRate{30};
 
-	PopulationControlConfig* Config{};
-	Hook::GlobalCallbackId FireCallBackID{};
+	PopulationControlConfig* Config;
+	Hook::GlobalCallbackId FireCallBackID;
 
 public:
 	PopulationControlSubsystem(PopulationControlConfig* SharedConfig);
