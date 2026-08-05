@@ -16,13 +16,11 @@ PopulationControlSystem::PopulationControlSystem() {
 }
 
 PopulationControlSystem::~PopulationControlSystem() {
-	delete TickingPopulationControl;
 }
 
 
 void PopulationControlSystem::on_unreal_init() {
-	static PopulationControlSubsystem Ticker{&Config};
-	TickingPopulationControl = &Ticker;
+	TickingPopulationControl = std::make_unique<PopulationControlSubsystem>(&Config);
 }
 
 

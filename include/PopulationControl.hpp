@@ -11,7 +11,7 @@ private:
 	PopulationControlConfig Config{};
 
 public:
-	PopulationControlSubsystem* TickingPopulationControl{};
+	std::unique_ptr<PopulationControlSubsystem> TickingPopulationControl{};
 
     PopulationControlSystem();
 	~PopulationControlSystem() override;
